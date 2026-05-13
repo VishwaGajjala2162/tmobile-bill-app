@@ -10,139 +10,125 @@ months_list = [
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ]
 
-# Session state for saved months
-if "saved_months" not in st.session_state:
-    st.session_state.saved_months = ["Jan"]
-
 # Select Months
 selected_months = st.multiselect(
     "Select Months",
     months_list,
-    default=st.session_state.saved_months
+    default=[]
 )
 
-# Ensure at least one month selected
-if len(selected_months) == 0:
-    selected_months = ["Jan"]
+# Only continue if months selected
+if len(selected_months) > 0:
 
-# Save previously selected months
-for month in selected_months:
-    if month not in st.session_state.saved_months:
-        st.session_state.saved_months.append(month)
+    # Number of Months
+    months = len(selected_months)
 
-# Maintain month order
-st.session_state.saved_months = [
-    m for m in months_list if m in st.session_state.saved_months
-]
+    st.write(f"## Number of Months: {months}")
 
-final_months = st.session_state.saved_months
+    # Selected Month Display
+    month_names = "/".join(selected_months)
 
-# Number of Months
-months = len(final_months)
+    st.write(f"## Selected Months: {month_names}")
 
-st.write(f"## Number of Months: {months}")
+    # Constants
+    total_bill = 265
+    members = 9
+    base_per_month = total_bill / members
 
-# Selected Month Display
-month_names = "/".join(final_months)
+    # People
+    people = [
+        "Varshan",
+        "Mahesh Kanala",
+        "Sujith",
+        "Mahesh Dirisala",
+        "Prasad"
+    ]
 
-st.write(f"## Selected Months: {month_names}")
+    # Extra Charges
+    extra_charges = {
+        "Mahesh Dirisala": 4.16,
+        "Prasad": 22.09
+    }
 
-# Constants
-total_bill = 265
-members = 9
-base_per_month = total_bill / members
+    # Payment Status Section
+    st.subheader("💰 Payment Status")
 
-# People
-people = [
-    "Varshan",
-    "Mahesh Kanala",
-    "Sujith",
-    "Mahesh Dirisala",
-    "Prasad"
-]
+    # Store unpaid months count
+    unpaid_months_count = {}
 
-# Extra Charges
-extra_charges = {
-    "Mahesh Dirisala": 4.16,
-    "Prasad": 22.09
-}
+    for person in people:
 
-# Payment Status Section
-st.subheader("💰 Payment Status")
+        # Initial Amount
+        pending_months = months
 
-# Store unpaid months count
-unpaid_months_count = {}
+        base_total = base_per_month * pending_months
+        extra_total = extra_charges.get(person, 0) * pending_months
 
-for person in people:
+        final_amount = round(base_total + extra_total, 2)
 
-    # Initialize with total months
-    pending_months = months
-
-    base_total = base_per_month * pending_months
-    extra_total = extra_charges.get(person, 0) * pending_months
-
-    final_amount = round(base_total + extra_total, 2)
-
-    # Smaller Name + Amount
-    st.markdown(
-        f"<h4 style='margin-bottom:5px;'>{person} - $ {final_amount}</h4>",
-        unsafe_allow_html=True
-    )
-
-    cols = st.columns(len(final_months))
-
-    unpaid_count = 0
-
-    for idx, month in enumerate(final_months):
-
-        paid = cols[idx].checkbox(
-            f"{month}",
-            key=f"{person}_{month}"
+        # Name + Amount
+        st.markdown(
+            f"<h4 style='margin-bottom:5px;'>{person} - $ {final_amount}</h4>",
+            unsafe_allow_html=True
         )
 
-        if paid:
-            cols[idx].success("PAID")
-        else:
-            cols[idx].error("NOT PAID")
-            unpaid_count += 1
+        cols = st.columns(len(selected_months))
 
-    unpaid_months_count[person] = unpaid_count
+        unpaid_count = 0
 
-    # Recalculate Pending Amount
-    base_total = base_per_month * unpaid_count
-    extra_total = extra_charges.get(person, 0) * unpaid_count
+        for idx, month in enumerate(selected_months):
 
-    pending_amount = round(base_total + extra_total, 2)
+            paid = cols[idx].checkbox(
+                f"{month}",
+                key=f"{person}_{month}"
+            )
 
-    st.markdown(
-        f"### Pending Amount: $ {pending_amount}"
-    )
+            if paid:
+                cols[idx].success("PAID")
+            else:
+                cols[idx].error("NOT PAID")
+                unpaid_count += 1
 
-    st.divider()
+        unpaid_months_count[person] = unpaid_count
 
-# Pending Bill Summary
-st.subheader("📄 Pending Bill Summary")
+        # Pending Amount
+        base_total = base_per_month * unpaid_count
+        extra_total = extra_charges.get(person, 0) * unpaid_count
 
-for person in people:
+        pending_amount = round(base_total + extra_total, 2)
 
-    unpaid_months = unpaid_months_count[person]
+        st.markdown(
+            f"##### Pending Amount: $ {pending_amount}"
+        )
 
-    base_total = base_per_month * unpaid_months
-    extra_total = extra_charges.get(person, 0) * unpaid_months
+        st.divider()
 
-    final_amount = round(base_total + extra_total, 2)
+    # Pending Summary
+    st.subheader("📄 Pending Bill Summary")
 
-    pending_month_names = []
+    for person in people:
 
-    for month in final_months:
+        unpaid_months = unpaid_months_count[person]
 
-        paid = st.session_state.get(f"{person}_{month}", False)
+        base_total = base_per_month * unpaid_months
+        extra_total = extra_charges.get(person, 0) * unpaid_months
 
-        if not paid:
-            pending_month_names.append(month)
+        final_amount = round(base_total + extra_total, 2)
 
-    pending_months_display = "/".join(pending_month_names)
+        pending_month_names = []
 
-    st.text(
-        f"{person} ----- {pending_months_display} ----- Due Amount: $ {final_amount}"
-    )
+        for month in selected_months:
+
+            paid = st.session_state.get(f"{person}_{month}", False)
+
+            if not paid:
+                pending_month_names.append(month)
+
+        pending_months_display = "/".join(pending_month_names)
+
+        st.text(
+            f"{person} ----- {pending_months_display} ----- Due Amount: $ {final_amount}"
+        )
+
+else:
+    st.info("Please select month(s) to calculate the bill.")
